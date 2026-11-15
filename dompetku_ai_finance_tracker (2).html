@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DompetKu - AI Finance Tracker PWA</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- PWA Manifest & Meta Tags -->
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DompetKu AI">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/4f46e5/ffffff?text=DK">
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22DompetKu%20AI%20Finance%20Tracker%22%2C%22short_name%22%3A%22DompetKu%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f1f5f9%22%2C%22theme_color%22%3A%22%234f46e5%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fplacehold.co%2F192x192%2F4f46e5%2Fffffff%3Ftext%3DDK%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fplacehold.co%2F512x512%2F4f46e5%2Fffffff%3Ftext%3DDK%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen pb-28 md:pb-12" x-data="financeApp()" x-init="init()">
+
+    <!-- PWA Install Banner (Appears if installable) -->
+    <div x-show="showInstallBanner" x-transition class="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-4 py-3 shadow-lg flex items-center justify-between sticky top-0 z-50" x-cloak>
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center font-bold text-sm shadow-inner">
+                <i class="fa-solid fa-cloud-arrow-down"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-xs md:text-sm">Install Aplikasi DompetKu</h4>
+                <p class="text-[11px] text-indigo-100">Akses cepat seperti aplikasi native di HP atau Desktop Anda.</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button @click="installPWA()" class="bg-white text-indigo-600 hover:bg-indigo-50 px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-sm">
+                Install Sekarang
+            </button>
+            <button @click="showInstallBanner = false" class="text-indigo-200 hover:text-white px-2 py-1 text-xs">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center font-bold text-xl shadow-inner">
+                    <i class="fa-solid fa-wallet text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg md:text-xl tracking-tight leading-tight">DompetKu AI</h1>
+                    <p class="text-xs text-indigo-200">PWA Finance & AI Receipt Scanner</p>
+                </div>
+            </div>
+
+            <!-- Desktop Navigation Tabs -->
+            <div class="hidden md:flex items-center space-x-1 bg-indigo-700/50 p-1 rounded-xl">
+                <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-white text-indigo-600 shadow-sm' : 'text-indigo-100 hover:bg-indigo-600'" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition">Dashboard</button>
+                <button @click="activeTab = 'scan'" :class="activeTab === 'scan' ? 'bg-white text-indigo-600 shadow-sm' : 'text-indigo-100 hover:bg-indigo-600'" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition">Scan Struk AI</button>
+                <button @click="activeTab = 'add'" :class="activeTab === 'add' ? 'bg-white text-indigo-600 shadow-sm' : 'text-indigo-100 hover:bg-indigo-600'" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition">Tambah Transaksi</button>
+                <button @click="activeTab = 'history'" :class="activeTab === 'history' ? 'bg-white text-indigo-600 shadow-sm' : 'text-indigo-100 hover:bg-indigo-600'" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition">Riwayat</button>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <button @click="resetDataPrompt = true" class="text-xs bg-indigo-700/80 hover:bg-rose-600 px-3 py-2 rounded-xl transition text-indigo-100 flex items-center gap-1.5 font-medium shadow-sm" title="Reset Data">
+                    <i class="fa-solid fa-rotate-right"></i> <span class="hidden sm:inline">Reset</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 pt-6 pb-8">
+
+        <!-- TOAST NOTIFICATION -->
+        <div x-show="toast.show" x-transition.opacity.duration.300ms 
+             class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-11/12 max-w-md px-4 py-3 rounded-2xl shadow-xl flex items-center space-x-3 text-white text-sm font-medium"
+             :class="toast.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'" x-cloak>
+            <i class="fa-solid text-base" :class="toast.type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'"></i>
+            <span class="flex-1" x-text="toast.message"></span>
+        </div>
+
+        <!-- RESET CONFIRMATION MODAL -->
+        <div x-show="resetDataPrompt" x-transition.opacity class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+            <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 text-center">
+                <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl mx-auto flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-800 text-base">Atur Ulang Data?</h3>
+                    <p class="text-xs text-slate-500 mt-1">Semua riwayat transaksi akan dihapus dan saldo kembali ke Rp 0.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-2">
+                    <button @click="resetDataPrompt = false" class="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-xs font-semibold transition">Batal</button>
+                    <button @click="executeReset()" class="bg-rose-600 hover:bg-rose-700 text-white py-2.5 rounded-xl text-xs font-semibold transition shadow-md">Ya, Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 1: DASHBOARD -->
+        <div x-show="activeTab === 'dashboard'" x-transition class="space-y-6" x-cloak>
+            
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Total Balance -->
+                <div class="bg-gradient-to-br from-indigo-600 to-violet-700 text-white rounded-3xl p-6 shadow-lg relative overflow-hidden flex flex-col justify-between">
+                    <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-medium uppercase tracking-wider text-indigo-200">Total Saldo Bersih</span>
+                            <span class="bg-white/20 text-[10px] px-2.5 py-1 rounded-full font-semibold backdrop-blur-sm">Rp 0 Awal</span>
+                        </div>
+                        <div class="text-3xl font-extrabold tracking-tight" x-text="formatRupiah(totalBalance())"></div>
+                    </div>
+                    <p class="text-[11px] text-indigo-200 mt-4 pt-3 border-t border-white/15">Pemasukan dikurangi pengeluaran</p>
+                </div>
+
+                <!-- Total Income -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Total Pemasukan</span>
+                            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <i class="fa-solid fa-arrow-down-long text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-bold text-slate-800 tracking-tight" x-text="formatRupiah(totalIncome())"></div>
+                    </div>
+                    <p class="text-[11px] text-emerald-600 font-medium mt-4 pt-3 border-t border-slate-100 flex items-center gap-1">
+                        <i class="fa-solid fa-circle-check"></i> Akumulasi pemasukan
+                    </p>
+                </div>
+
+                <!-- Total Expense -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Total Pengeluaran</span>
+                            <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                                <i class="fa-solid fa-arrow-up-long text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-bold text-slate-800 tracking-tight" x-text="formatRupiah(totalExpense())"></div>
+                    </div>
+                    <p class="text-[11px] text-rose-600 font-medium mt-4 pt-3 border-t border-slate-100 flex items-center gap-1">
+                        <i class="fa-solid fa-wallet"></i> Akumulasi pengeluaran
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quick Action Banners -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div @click="activeTab = 'scan'" class="bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white p-5 rounded-3xl shadow-md cursor-pointer transition flex items-center justify-between group">
+                    <div class="space-y-1">
+                        <span class="bg-white/20 text-[10px] px-2.5 py-0.5 rounded-full font-semibold">Gemini AI</span>
+                        <h3 class="font-bold text-base">Scan Struk Belanja</h3>
+                        <p class="text-xs text-indigo-100">Upload foto struk, data otomatis terisi</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl group-hover:scale-110 transition shrink-0">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                </div>
+
+                <div @click="activeTab = 'add'" class="bg-white hover:bg-slate-50 border border-slate-200/80 p-5 rounded-3xl shadow-sm cursor-pointer transition flex items-center justify-between group">
+                    <div class="space-y-1">
+                        <span class="bg-emerald-50 text-emerald-600 text-[10px] px-2.5 py-0.5 rounded-full font-semibold">Manual Input</span>
+                        <h3 class="font-bold text-slate-800 text-base">Catat Transaksi Baru</h3>
+                        <p class="text-xs text-slate-500">Tambah pemasukan atau pengeluaran</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-110 transition shrink-0">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="font-bold text-slate-800 text-base">Aktivitas & Transaksi Terakhir</h2>
+                    <button @click="activeTab = 'history'" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">Lihat Semua (<span x-text="transactions.length"></span>)</button>
+                </div>
+                
+                <template x-if="transactions.length === 0">
+                    <div class="text-center py-12 text-slate-400 space-y-2">
+                        <div class="w-14 h-14 bg-slate-50 rounded-2xl mx-auto flex items-center justify-center text-2xl text-slate-300">
+                            <i class="fa-regular fa-folder-open"></i>
+                        </div>
+                        <p class="text-xs font-medium">Belum ada transaksi. Saldo awal saat ini Rp 0.</p>
+                        <p class="text-[11px] text-slate-400">Gunakan menu Scan Struk AI atau Tambah Transaksi.</p>
+                    </div>
+                </template>
+
+                <div class="space-y-3">
+                    <template x-for="tx in transactions.slice(0, 5)" :key="tx.id">
+                        <div class="flex items-center justify-between p-3.5 bg-slate-50/70 hover:bg-slate-100/80 rounded-2xl transition border border-slate-100">
+                            <div class="flex items-center space-x-3.5">
+                                <div class="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm"
+                                     :class="tx.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'">
+                                    <i class="fa-solid text-sm" :class="getCategoryIcon(tx.category)"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-800" x-text="tx.description"></p>
+                                    <p class="text-xs text-slate-400 mt-0.5"><span class="font-medium text-slate-600" x-text="tx.category"></span> • <span x-text="formatDate(tx.date)"></span></p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-extrabold tracking-tight" 
+                                  :class="tx.type === 'income' ? 'text-emerald-600' : 'text-slate-800'"
+                                  x-text="(tx.type === 'income' ? '+ ' : '- ') + formatRupiah(tx.amount)">
+                            </span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: SCAN STRUK AI -->
+        <div x-show="activeTab === 'scan'" x-transition class="space-y-6 max-w-2xl mx-auto" x-cloak>
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 text-center space-y-5">
+                <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl mx-auto flex items-center justify-center text-2xl shadow-inner">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <div class="space-y-1">
+                    <h2 class="font-bold text-slate-800 text-lg">Scan Struk Pintar dengan Gemini AI</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">Upload foto struk belanja, restoran, atau kuitansi Anda. AI akan membaca total nominal, toko, dan kategori secara otomatis.</p>
+                </div>
+
+                <input type="file" id="receiptInput" accept="image/*" class="hidden" @change="handleReceiptUpload($event)">
+
+                <div class="pt-2">
+                    <button @click="document.getElementById('receiptInput').click()" 
+                            :disabled="scanning"
+                            class="w-full sm:w-auto px-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-3.5 rounded-2xl shadow-md transition flex items-center justify-center gap-2.5 text-sm mx-auto">
+                        <template x-if="!scanning">
+                            <span><i class="fa-solid fa-cloud-arrow-up text-base"></i> Unggah Foto Struk</span>
+                        </template>
+                        <template x-if="scanning">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-spinner animate-spin"></i> AI Sedang Membaca Struk...
+                            </span>
+                        </template>
+                    </button>
+                    <p class="text-[11px] text-slate-400 mt-2">Format: JPG, PNG, WEBP</p>
+                </div>
+            </div>
+
+            <!-- SCAN RESULT FORM -->
+            <template x-if="scanResult">
+                <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-indigo-100 space-y-5 animate-fade-in">
+                    <div class="flex justify-between items-center border-b pb-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                                <i class="fa-solid fa-check text-xs"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-800 text-sm">Hasil Ekstraksi Gemini AI</h3>
+                        </div>
+                        <span class="text-[11px] bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full font-semibold">Siap Disimpan</span>
+                    </div>
+
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Keterangan / Nama Toko</label>
+                            <input type="text" x-model="scanResult.description" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">Nominal (Rp)</label>
+                                <input type="number" x-model.number="scanResult.amount" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-rose-600 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">Tanggal</label>
+                                <input type="date" x-model="scanResult.date" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">Jenis Transaksi</label>
+                                <select x-model="scanResult.type" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option value="expense">Pengeluaran</option>
+                                    <option value="income">Pemasukan</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">Kategori</label>
+                                <select x-model="scanResult.category" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option value="Makanan & Minuman">Makanan & Minuman</option>
+                                    <option value="Belanja">Belanja</option>
+                                    <option value="Transportasi">Transportasi</option>
+                                    <option value="Tagihan & Utilitas">Tagihan & Utilitas</option>
+                                    <option value="Hiburan">Hiburan</option>
+                                    <option value="Lainnya">Lainnya</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-3 pt-2">
+                        <button @click="scanResult = null" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-2xl text-sm font-semibold transition">Batal</button>
+                        <button @click="saveScannedTransaction()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-2xl text-sm font-semibold transition shadow-md">Simpan ke DompetKu</button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- TAB 3: ADD MANUAL TRANSACTION -->
+        <div x-show="activeTab === 'add'" x-transition class="space-y-6 max-w-xl mx-auto" x-cloak>
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80">
+                <h2 class="font-bold text-slate-800 text-lg mb-6">Tambah Transaksi Manual</h2>
+                
+                <form @submit.prevent="addManualTransaction" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl">
+                        <button type="button" @click="manualForm.type = 'expense'" 
+                                :class="manualForm.type === 'expense' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500'"
+                                class="py-2.5 text-xs font-bold rounded-xl transition">Pengeluaran</button>
+                        <button type="button" @click="manualForm.type = 'income'" 
+                                :class="manualForm.type === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'"
+                                class="py-2.5 text-xs font-bold rounded-xl transition">Pemasukan</button>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Jumlah (Rp)</label>
+                        <input type="number" x-model.number="manualForm.amount" required placeholder="Contoh: 50000" 
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-base font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Keterangan / Deskripsi</label>
+                        <input type="text" x-model="manualForm.description" required placeholder="Contoh: Makan Siang / Gaji Bulanan" 
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1.5">Kategori</label>
+                            <select x-model="manualForm.category" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option value="Makanan & Minuman">Makanan & Minuman</option>
+                                <option value="Belanja">Belanja</option>
+                                <option value="Transportasi">Transportasi</option>
+                                <option value="Gaji">Gaji</option>
+                                <option value="Tagihan & Utilitas">Tagihan & Utilitas</option>
+                                <option value="Hiburan">Hiburan</option>
+                                <option value="Investasi">Investasi</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1.5">Tanggal</label>
+                            <input type="date" x-model="manualForm.date" required 
+                                   class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-2xl shadow-md transition text-sm mt-3">
+                        Simpan Transaksi
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 4: HISTORY -->
+        <div x-show="activeTab === 'history'" x-transition class="space-y-6" x-cloak>
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <h2 class="font-bold text-slate-800 text-base">Riwayat Lengkap Transaksi</h2>
+                    <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-semibold" x-text="filteredTransactions.length + ' transaksi'"></span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sm:col-span-2 relative">
+                        <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400 text-xs"></i>
+                        <input type="text" x-model="searchQuery" placeholder="Cari berdasarkan keterangan atau kategori..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-2xl text-xs font-semibold">
+                        <button @click="historyFilter = 'all'" :class="historyFilter === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'" class="py-1.5 rounded-xl transition">Semua</button>
+                        <button @click="historyFilter = 'income'" :class="historyFilter === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'" class="py-1.5 rounded-xl transition">Masuk</button>
+                        <button @click="historyFilter = 'expense'" :class="historyFilter === 'expense' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500'" class="py-1.5 rounded-xl transition">Keluar</button>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-2">
+                    <template x-if="filteredTransactions.length === 0">
+                        <div class="text-center py-12 text-slate-400 space-y-2">
+                            <div class="w-14 h-14 bg-slate-50 rounded-2xl mx-auto flex items-center justify-center text-2xl text-slate-300">
+                                <i class="fa-regular fa-face-grimace"></i>
+                            </div>
+                            <p class="text-xs font-medium">Tidak ada transaksi yang sesuai.</p>
+                        </div>
+                    </template>
+
+                    <template x-for="tx in filteredTransactions" :key="tx.id">
+                        <div class="flex items-center justify-between p-4 bg-slate-50/80 hover:bg-slate-100/90 rounded-2xl transition border border-slate-200/60">
+                            <div class="flex items-center space-x-3.5">
+                                <div class="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm"
+                                     :class="tx.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'">
+                                    <i class="fa-solid text-sm" :class="getCategoryIcon(tx.category)"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-800" x-text="tx.description"></p>
+                                    <p class="text-xs text-slate-400 mt-0.5"><span class="font-medium text-slate-600" x-text="tx.category"></span> • <span x-text="formatDate(tx.date)"></span></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm font-extrabold tracking-tight" 
+                                      :class="tx.type === 'income' ? 'text-emerald-600' : 'text-slate-800'"
+                                      x-text="(tx.type === 'income' ? '+ ' : '- ') + formatRupiah(tx.amount)">
+                                </span>
+                                <button @click="deleteTransaction(tx.id)" class="w-8 h-8 rounded-xl bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition flex items-center justify-center shadow-sm border border-slate-200/50">
+                                    <i class="fa-regular fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Navigation Bar (Mobile Friendly) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2 flex justify-around items-center z-40 shadow-2xl">
+        <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'" class="flex flex-col items-center py-1 transition">
+            <i class="fa-solid fa-chart-pie text-base mb-0.5"></i>
+            <span class="text-[10px]">Dashboard</span>
+        </button>
+        <button @click="activeTab = 'scan'" :class="activeTab === 'scan' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'" class="flex flex-col items-center py-1 transition">
+            <i class="fa-solid fa-wand-magic-sparkles text-base mb-0.5"></i>
+            <span class="text-[10px]">Scan AI</span>
+        </button>
+        <button @click="activeTab = 'add'" :class="activeTab === 'add' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'" class="flex flex-col items-center py-1 transition">
+            <div class="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center -mt-3 shadow-lg hover:scale-105 transition">
+                <i class="fa-solid fa-plus text-sm"></i>
+            </div>
+            <span class="text-[10px] mt-0.5">Tambah</span>
+        </button>
+        <button @click="activeTab = 'history'" :class="activeTab === 'history' ? 'text-indigo-600 font-bold' : 'text-slate-400 font-medium'" class="flex flex-col items-center py-1 transition">
+            <i class="fa-solid fa-list-ul text-base mb-0.5"></i>
+            <span class="text-[10px]">Riwayat</span>
+        </button>
+    </nav>
+
+    <!-- JavaScript & PWA Service Worker -->
+    <script>
+        // Register Service Worker for PWA Offline Caching
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    self.addEventListener('install', (e) => {
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('activate', (e) => {
+                        e.waitUntil(clients.claim());
+                    });
+                    self.addEventListener('fetch', (e) => {
+                        e.respondWith(
+                            caches.match(e.request).then((response) => {
+                                return response || fetch(e.request).catch(() => {});
+                            })
+                        );
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).catch(err => {
+                    console.log('SW registration error: ', err);
+                });
+            });
+        }
+
+        function financeApp() {
+            return {
+                activeTab: 'dashboard',
+                transactions: [],
+                searchQuery: '',
+                historyFilter: 'all',
+                scanning: false,
+                scanResult: null,
+                resetDataPrompt: false,
+                showInstallBanner: false,
+                deferredPrompt: null,
+                toast: { show: false, message: '', type: 'success' },
+                
+                manualForm: {
+                    type: 'expense',
+                    amount: '',
+                    description: '',
+                    category: 'Makanan & Minuman',
+                    date: new Date().toISOString().split('T')[0]
+                },
+
+                init() {
+                    // Load saved transactions from localStorage (starts at 0 if empty)
+                    const saved = localStorage.getItem('dompetku_ai_transactions');
+                    if (saved) {
+                        try {
+                            this.transactions = JSON.parse(saved);
+                        } catch (e) {
+                            this.transactions = [];
+                        }
+                    } else {
+                        this.transactions = [];
+                    }
+
+                    // Watch transactions for autosave
+                    this.$watch('transactions', () => {
+                        this.saveData();
+                    });
+
+                    // PWA Install Prompt Listener
+                    window.addEventListener('beforeinstallprompt', (e) => {
+                        e.preventDefault();
+                        this.deferredPrompt = e;
+                        this.showInstallBanner = true;
+                    });
+                },
+
+                installPWA() {
+                    if (this.deferredPrompt) {
+                        this.deferredPrompt.prompt();
+                        this.deferredPrompt.userChoice.then((choiceResult) => {
+                            if (choiceResult.outcome === 'accepted') {
+                                this.showToast('Terima kasih telah menginstall DompetKu!', 'success');
+                            }
+                            this.deferredPrompt = null;
+                            this.showInstallBanner = false;
+                        });
+                    }
+                },
+
+                saveData() {
+                    localStorage.setItem('dompetku_ai_transactions', JSON.stringify(this.transactions));
+                },
+
+                executeReset() {
+                    localStorage.removeItem('dompetku_ai_transactions');
+                    this.transactions = [];
+                    this.resetDataPrompt = false;
+                    this.showToast('Data direset. Saldo kembali Rp 0.', 'success');
+                },
+
+                showToast(message, type = 'success') {
+                    this.toast.message = message;
+                    this.toast.type = type;
+                    this.toast.show = true;
+                    setTimeout(() => {
+                        this.toast.show = false;
+                    }, 3500);
+                },
+
+                formatRupiah(number) {
+                    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number || 0);
+                },
+
+                formatDate(dateString) {
+                    if (!dateString) return '';
+                    const options = { day: 'numeric', month: 'short', year: 'numeric' };
+                    return new Date(dateString).toLocaleDateString('id-ID', options);
+                },
+
+                totalBalance() {
+                    return this.transactions.reduce((acc, tx) => {
+                        return tx.type === 'income' ? acc + Number(tx.amount) : acc - Number(tx.amount);
+                    }, 0);
+                },
+
+                totalIncome() {
+                    return this.transactions
+                        .filter(tx => tx.type === 'income')
+                        .reduce((acc, tx) => acc + Number(tx.amount), 0);
+                },
+
+                totalExpense() {
+                    return this.transactions
+                        .filter(tx => tx.type === 'expense')
+                        .reduce((acc, tx) => acc + Number(tx.amount), 0);
+                },
+
+                getCategoryIcon(category) {
+                    switch(category) {
+                        case 'Makanan & Minuman': return 'fa-utensils';
+                        case 'Gaji': return 'fa-money-bill-wave';
+                        case 'Belanja': return 'fa-cart-shopping';
+                        case 'Transportasi': return 'fa-car';
+                        case 'Tagihan & Utilitas': return 'fa-bolt';
+                        case 'Hiburan': return 'fa-film';
+                        case 'Investasi': return 'fa-chart-line';
+                        default: return 'fa-wallet';
+                    }
+                },
+
+                addManualTransaction() {
+                    if (!this.manualForm.amount || !this.manualForm.description) {
+                        this.showToast('Harap isi jumlah dan keterangan!', 'error');
+                        return;
+                    }
+
+                    const newTx = {
+                        id: Date.now(),
+                        type: this.manualForm.type,
+                        amount: Number(this.manualForm.amount),
+                        description: this.manualForm.description,
+                        category: this.manualForm.category,
+                        date: this.manualForm.date
+                    };
+
+                    this.transactions.unshift(newTx);
+                    this.showToast('Transaksi berhasil disimpan!', 'success');
+
+                    this.manualForm.amount = '';
+                    this.manualForm.description = '';
+                    this.activeTab = 'dashboard';
+                },
+
+                deleteTransaction(id) {
+                    this.transactions = this.transactions.filter(tx => tx.id !== id);
+                    this.showToast('Transaksi dihapus', 'success');
+                },
+
+                get filteredTransactions() {
+                    return this.transactions.filter(tx => {
+                        const matchesFilter = this.historyFilter === 'all' || tx.type === this.historyFilter;
+                        const matchesSearch = tx.description.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
+                                              tx.category.toLowerCase().includes(this.searchQuery.toLowerCase());
+                        return matchesFilter && matchesSearch;
+                    });
+                },
+
+                fileToBase64(file) {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = () => {
+                            let encoded = reader.result.toString().replace(/^data:(.*,)?/, '');
+                            if ((encoded.length % 4) > 0) {
+                                encoded += '='.repeat(4 - (encoded.length % 4));
+                            }
+                            resolve(encoded);
+                        };
+                        reader.onerror = error => reject(error);
+                    });
+                },
+
+                async handleReceiptUpload(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    this.scanning = true;
+                    try {
+                        const base64Data = await this.fileToBase64(file);
+                        const prompt = "Analisa gambar struk belanja atau kuitansi ini. Ekstrak informasi berikut dalam format JSON valid: amount (angka total harga saja tanpa titik atau koma, misal 45000), description (nama toko atau merchant), date (format YYYY-MM-DD, gunakan tanggal hari ini jika tidak tertera), category (pilih salah satu dari: Makanan & Minuman, Belanja, Transportasi, Tagihan & Utilitas, Hiburan, Lainnya).";
+
+                        const payload = {
+                            contents: [{
+                                role: "user",
+                                parts: [
+                                    { text: prompt },
+                                    { inlineData: { mimeType: file.type || 'image/jpeg', data: base64Data } }
+                                ]
+                            }],
+                            generationConfig: {
+                                responseMimeType: "application/json",
+                                responseSchema: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        amount: { type: "NUMBER" },
+                                        description: { type: "STRING" },
+                                        date: { type: "STRING" },
+                                        category: { type: "STRING" }
+                                    },
+                                    required: ["amount", "description", "category"]
+                                }
+                            }
+                        };
+
+                        const apiKey = "";
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                        let response;
+                        let retries = 3;
+                        let delay = 1000;
+                        for (let i = 0; i < retries; i++) {
+                            try {
+                                response = await fetch(apiUrl, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                });
+                                if (response.ok) break;
+                            } catch (e) {
+                                if (i === retries - 1) throw e;
+                                await new Promise(res => setTimeout(res, delay));
+                                delay *= 2;
+                            }
+                        }
+
+                        if (!response || !response.ok) {
+                            throw new Error('Gagal menghubungi Gemini API.');
+                        }
+
+                        const result = await response.json();
+                        const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                        if (jsonText) {
+                            const data = JSON.parse(jsonText);
+                            this.scanResult = {
+                                type: 'expense',
+                                amount: data.amount || 0,
+                                description: data.description || 'Belanja Struk AI',
+                                category: data.category || 'Belanja',
+                                date: data.date || new Date().toISOString().split('T')[0]
+                            };
+                            this.showToast('Struk berhasil dibaca AI!', 'success');
+                        } else {
+                            this.showToast('AI gagal membaca struk. Coba foto lain.', 'error');
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        this.showToast('Terjadi kesalahan saat memproses gambar.', 'error');
+                    } finally {
+                        this.scanning = false;
+                        event.target.value = '';
+                    }
+                },
+
+                saveScannedTransaction() {
+                    if (!this.scanResult.amount || !this.scanResult.description) {
+                        this.showToast('Mohon lengkapi nominal dan keterangan!', 'error');
+                        return;
+                    }
+
+                    const newTx = {
+                        id: Date.now(),
+                        type: this.scanResult.type,
+                        amount: Number(this.scanResult.amount),
+                        description: this.scanResult.description,
+                        category: this.scanResult.category,
+                        date: this.scanResult.date
+                    };
+
+                    this.transactions.unshift(newTx);
+                    this.scanResult = null;
+                    this.showToast('Transaksi struk disimpan!', 'success');
+                    this.activeTab = 'dashboard';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
